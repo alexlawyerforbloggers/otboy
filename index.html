@@ -1,0 +1,256 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0f2b33">
+<title>Отбой — тренажёр спокойного дыхания</title>
+<style>
+:root{
+  --bg:#f4f7f6; --card:#ffffff; --ink:#18323a; --muted:#5d7379; --line:#d7e2e0;
+  --in:#2f8f83; --out:#6c8fc7; --accent:#2f8f83; --warn:#b5651d;
+}
+@media (prefers-color-scheme: dark){
+  :root{ --bg:#0f2b33; --card:#16383f; --ink:#e7f1ef; --muted:#9db4b2; --line:#24505a; --in:#5cc4b5; --out:#8fb0e6; --accent:#5cc4b5; --warn:#e2a35f; }
+}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--ink);font-family:-apple-system,"Segoe UI",Roboto,Arial,sans-serif;-webkit-tap-highlight-color:transparent}
+body{min-height:100vh;display:flex;flex-direction:column;align-items:center;padding:16px 16px calc(16px + env(safe-area-inset-bottom))}
+.wrap{width:100%;max-width:460px}
+header{display:flex;align-items:baseline;justify-content:space-between;margin:4px 2px 12px}
+h1{font-size:28px;margin:0;letter-spacing:.01em}
+h1 small{display:block;font-size:13px;font-weight:400;color:var(--muted);margin-top:2px}
+.tabs{display:flex;gap:6px}
+.tabs button{border:1px solid var(--line);background:var(--card);color:var(--ink);border-radius:999px;padding:7px 12px;font-size:14px}
+.tabs button[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:#fff}
+.card{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:16px;margin-bottom:12px}
+.stage{display:flex;flex-direction:column;align-items:center;padding:22px 16px 18px}
+.ring{position:relative;width:min(78vw,300px);aspect-ratio:1;display:grid;place-items:center}
+.ring svg{position:absolute;inset:0}
+.ball{width:42%;aspect-ratio:1;border-radius:50%;background:radial-gradient(circle at 35% 30%,#ffffffaa,transparent 55%),var(--in);
+  transform:scale(.62);transition-property:transform,background-color;transition-timing-function:ease-in-out;box-shadow:0 10px 40px #0002}
+.phase{text-align:center;font-size:26px;font-weight:600;margin-top:14px;min-height:32px}
+.count{font-size:15px;color:var(--muted);margin-top:8px;text-align:center;min-height:20px}
+.timer{font-variant-numeric:tabular-nums;font-size:42px;font-weight:300;margin-top:6px}
+.row{display:flex;gap:8px;flex-wrap:wrap}
+.seg{display:flex;border:1px solid var(--line);border-radius:12px;overflow:hidden;flex:1}
+.seg button{flex:1;border:0;background:transparent;color:var(--ink);padding:10px 4px;font-size:14px}
+.seg small{font-size:11px;white-space:nowrap}
+.seg button[aria-pressed="true"]{background:var(--accent);color:#fff}
+label.sw{display:flex;align-items:center;gap:8px;font-size:14px;color:var(--muted)}
+.big{width:100%;border:0;border-radius:14px;padding:16px;font-size:19px;font-weight:600;background:var(--accent);color:#fff;margin-top:14px}
+.big.stop{background:transparent;color:var(--ink);border:1px solid var(--line)}
+.lbl{font-size:13px;color:var(--muted);margin:2px 0 6px}
+.note{font-size:13px;color:var(--muted);line-height:1.45}
+.warn{color:var(--warn)}
+input[type=number]{width:100%;font-size:18px;padding:10px;border-radius:10px;border:1px solid var(--line);background:var(--bg);color:var(--ink)}
+input[type=range]{width:100%}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+table{width:100%;border-collapse:collapse;font-size:14px}
+td,th{padding:7px 4px;border-bottom:1px solid var(--line);text-align:center}
+th{font-weight:600;color:var(--muted);font-size:12px}
+.hidden{display:none!important}
+.small-btn{border:1px solid var(--line);background:transparent;color:var(--muted);border-radius:10px;padding:8px 10px;font-size:13px}
+h2{font-size:18px;margin:0 0 8px}
+p{margin:0 0 8px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>Отбой<small>тренажёр спокойного дыхания</small></h1>
+    <div class="tabs" role="tablist">
+      <button id="tBreath" aria-pressed="true">Дышать</button>
+      <button id="tLog" aria-pressed="false">Дневник</button>
+      <button id="tInfo" aria-pressed="false">?</button>
+    </div>
+  </header>
+
+  <!-- ДЫШАТЬ -->
+  <section id="pBreath">
+    <div class="card stage">
+      <div class="ring" aria-live="polite">
+        <svg viewBox="0 0 100 100" aria-hidden="true">
+          <circle cx="50" cy="50" r="47" fill="none" stroke="var(--line)" stroke-width="2"/>
+          <circle id="prog" cx="50" cy="50" r="47" fill="none" stroke="var(--accent)" stroke-width="2.5" stroke-linecap="round"
+                  stroke-dasharray="295.3" stroke-dashoffset="295.3" transform="rotate(-90 50 50)"/>
+        </svg>
+        <div class="ball" id="ball"></div>
+      </div>
+      <div class="phase" id="phase">Готовы?</div>
+      <div class="timer" id="timer">5:00</div>
+      <div class="count" id="count">Сядьте удобно, плечи опустите</div>
+    </div>
+
+    <div class="card" id="settings">
+      <div class="lbl">Ритм</div>
+      <div class="seg" id="segRate">
+        <button data-rate="6" aria-pressed="true">6 в мин<br><small>вдох 4 · выдох 6</small></button>
+        <button data-rate="5" aria-pressed="false">5 в мин<br><small>вдох 5 · выдох 7</small></button>
+        <button data-rate="7" aria-pressed="false">7 в мин<br><small>вдох 3,5 · выдох 5</small></button>
+      </div>
+      <div class="lbl" style="margin-top:12px">Длительность</div>
+      <div class="seg" id="segDur">
+        <button data-min="3" aria-pressed="false">3 мин</button>
+        <button data-min="5" aria-pressed="true">5 мин</button>
+        <button data-min="10" aria-pressed="false">10 мин</button>
+      </div>
+      <div class="row" style="margin-top:12px;justify-content:space-between">
+        <label class="sw"><input type="checkbox" id="snd" checked> звук</label>
+        <label class="sw"><input type="checkbox" id="vib" checked> вибрация</label>
+        <label class="sw"><input type="checkbox" id="diary"> записать пульс</label>
+      </div>
+    </div>
+
+    <div class="card hidden" id="before">
+      <h2>До начала</h2>
+      <div class="grid2">
+        <div><div class="lbl">Пульс, уд/мин</div><input type="number" id="hr0" inputmode="numeric" min="30" max="220" placeholder="напр. 92"></div>
+        <div><div class="lbl">Напряжение: <b id="s0v">5</b> из 10</div><input type="range" id="s0" min="0" max="10" value="5"></div>
+      </div>
+    </div>
+
+    <div class="card hidden" id="after">
+      <h2>После сеанса</h2>
+      <div class="grid2">
+        <div><div class="lbl">Пульс, уд/мин</div><input type="number" id="hr1" inputmode="numeric" min="30" max="220" placeholder="напр. 80"></div>
+        <div><div class="lbl">Напряжение: <b id="s1v">5</b> из 10</div><input type="range" id="s1" min="0" max="10" value="5"></div>
+      </div>
+      <button class="big" id="save">Сохранить в дневник</button>
+    </div>
+
+    <button class="big" id="go">Начать</button>
+    <p class="note" style="margin-top:12px">Дышите носом, без усилия; выдох длиннее вдоха. <span class="warn">Если закружится голова – просто дышите как обычно.</span><br>Сеанс со звуком и вибрацией – после нажатия «Начать»; экран во время сеанса не гаснет.</p>
+  </section>
+
+  <!-- ДНЕВНИК -->
+  <section id="pLog" class="hidden">
+    <div class="card">
+      <h2>Мой дневник</h2>
+      <p class="note">Записи хранятся только на этом устройстве.</p>
+      <table><thead><tr><th>Дата</th><th>Ритм</th><th>Пульс<br>до → после</th><th>Напряж.<br>до → после</th></tr></thead><tbody id="logBody"></tbody></table>
+      <p class="note" id="logSum" style="margin-top:10px"></p>
+      <div class="row" style="margin-top:6px"><button class="small-btn" id="export">Скопировать таблицу</button><button class="small-btn" id="clear">Очистить</button></div>
+    </div>
+  </section>
+
+  <!-- О ТРЕНАЖЁРЕ -->
+  <section id="pInfo" class="hidden">
+    <div class="card">
+      <h2>Зачем дышать медленно</h2>
+      <p class="note">Пульс постоянно немного ускоряется на вдохе и замедляется на выдохе. Если дышать примерно 6 раз в минуту, эти колебания совпадают с собственным ритмом регуляции давления – наступает <b>резонанс</b>, и нервная система быстрее переходит в режим отдыха. Этот эффект открыли в 1983 году физиолог Е.&nbsp;Г.&nbsp;Ващилло с коллегами; позже вместе с П.&nbsp;Лерером он сделал из него метод тренировки.</p>
+      <p class="note">Тренажёр задаёт ритм: шарик растёт – вдох, уменьшается – выдох. Если 6 в минуту даётся тяжело, выберите 7; если легко – попробуйте 5.</p>
+      <p class="note">Когда пригодится: после контрольной, перед выступлением, после сигнала тревоги, когда трудно снова сосредоточиться.</p>
+      <p class="note warn">Тренажёр не лечит и не заменяет врача. При болезнях сердца, лёгких или если медленное дыхание вызывает неприятные ощущения – посоветуйтесь с врачом.</p>
+      <p class="note">Проект «Резонансное дыхание и пульс школьников после учебной нагрузки», МБОУ «Лицей № 10» г. Белгорода, 2026.</p>
+    </div>
+  </section>
+</div>
+
+<script>
+(function(){
+  const $=id=>document.getElementById(id);
+  const RATES={6:[4,6],5:[5,7],7:[3.5,5]};
+  let rate=6, minutes=5, running=false, raf=0, t0=0, total=0, lastPhase=-1, breaths=0, wake=null, ctx=null;
+  let session=null;
+
+  // tabs
+  const tabs=[["tBreath","pBreath"],["tLog","pLog"],["tInfo","pInfo"]];
+  tabs.forEach(([b,p])=>$(b).onclick=()=>{tabs.forEach(([b2,p2])=>{$(b2).setAttribute("aria-pressed",b2===b);$(p2).classList.toggle("hidden",p2!==p)}); if(p==="pLog") renderLog();});
+
+  function seg(id,attr,cb){ const el=$(id); el.querySelectorAll("button").forEach(b=>b.onclick=()=>{ if(running) return; el.querySelectorAll("button").forEach(x=>x.setAttribute("aria-pressed",x===b)); cb(+b.dataset[attr]); }); }
+  seg("segRate","rate",v=>{rate=v;});
+  seg("segDur","min",v=>{minutes=v; $("timer").textContent=fmt(v*60);});
+  $("diary").onchange=()=>{ $("before").classList.toggle("hidden",!$("diary").checked); };
+  ["s0","s1"].forEach(k=>$(k).oninput=()=>$(k+"v").textContent=$(k).value);
+
+  const fmt=s=>{s=Math.max(0,Math.ceil(s));return Math.floor(s/60)+":"+String(s%60).padStart(2,"0");};
+
+  function tone(f,dur){
+    if(!$("snd").checked) return;
+    try{
+      ctx=ctx||new (window.AudioContext||window.webkitAudioContext)();
+      const o=ctx.createOscillator(), g=ctx.createGain();
+      o.type="sine"; o.frequency.value=f; o.connect(g); g.connect(ctx.destination);
+      const n=ctx.currentTime; g.gain.setValueAtTime(0,n); g.gain.linearRampToValueAtTime(.12,n+.08); g.gain.exponentialRampToValueAtTime(.001,n+dur);
+      o.start(n); o.stop(n+dur+.05);
+    }catch(e){}
+  }
+  function buzz(ms){ if($("vib").checked && navigator.vibrate) navigator.vibrate(ms); }
+
+  async function lock(){ try{ if("wakeLock" in navigator) wake=await navigator.wakeLock.request("screen"); }catch(e){} }
+  function unlock(){ try{ wake&&wake.release(); }catch(e){} wake=null; }
+
+  function start(){
+    running=true; total=minutes*60; breaths=0; lastPhase=-1;
+    session={date:new Date().toISOString(),rate,minutes,hr0:$("diary").checked?+$("hr0").value||null:null,s0:$("diary").checked?+$("s0").value:null};
+    $("go").textContent="Остановить"; $("go").classList.add("stop");
+    $("settings").classList.add("hidden"); $("before").classList.add("hidden"); $("after").classList.add("hidden");
+    lock(); t0=performance.now(); loop();
+  }
+  function stop(done){
+    running=false; cancelAnimationFrame(raf); unlock();
+    const ball=$("ball"); ball.style.transitionDuration="1.2s"; ball.style.transform="scale(.62)"; ball.style.background="";
+    $("phase").textContent=done?"Готово":"Остановлено";
+    $("count").textContent=done?`Вдохов: ${breaths}. Как вы себя чувствуете?`:"Можно начать заново";
+    $("go").textContent="Начать снова"; $("go").classList.remove("stop");
+    $("settings").classList.remove("hidden");
+    $("prog").style.strokeDashoffset=295.3;
+    if(done){ tone(392,1.2); buzz([80,80,80]); if($("diary").checked){ $("after").classList.remove("hidden"); } }
+    else { $("timer").textContent=fmt(minutes*60); if($("diary").checked) $("before").classList.remove("hidden"); }
+  }
+  function loop(){
+    const el=(performance.now()-t0)/1000;
+    if(el>=total){ $("timer").textContent="0:00"; stop(true); return; }
+    const [inh,exh]=RATES[rate], cyc=inh+exh, pos=el%cyc, n=Math.floor(el/cyc);
+    const phase=pos<inh?0:1;
+    if(phase!==lastPhase){
+      lastPhase=phase; const ball=$("ball");
+      if(phase===0){ breaths=n+1; ball.style.transitionDuration=inh+"s"; ball.style.transform="scale(1.55)"; ball.style.backgroundColor="var(--in)"; $("phase").textContent="Вдох"; tone(523,.6); buzz(60); }
+      else { ball.style.transitionDuration=exh+"s"; ball.style.transform="scale(.62)"; ball.style.backgroundColor="var(--out)"; $("phase").textContent="Выдох"; tone(330,.8); buzz(30); }
+      $("count").textContent=`Вдох ${breaths} · ритм ${rate} в минуту`;
+    }
+    $("timer").textContent=fmt(total-el);
+    $("prog").style.strokeDashoffset=295.3*(1-el/total);
+    raf=requestAnimationFrame(loop);
+  }
+  $("go").onclick=()=>{ running?stop(false):start(); };
+  document.addEventListener("visibilitychange",()=>{ if(document.visibilityState==="visible"&&running) lock(); });
+
+  // diary
+  const KEY="otboy-log-v1";
+  let mem=[];
+  const load=()=>{ try{ return JSON.parse(localStorage.getItem(KEY)||"[]"); }catch(e){ return mem.slice(); } };
+  const store=a=>{ mem=a.slice(); try{ localStorage.setItem(KEY,JSON.stringify(a)); }catch(e){} };
+  $("save").onclick=()=>{
+    if(!session) return;
+    session.hr1=+$("hr1").value||null; session.s1=+$("s1").value;
+    const a=load(); a.unshift(session); store(a); session=null;
+    $("after").classList.add("hidden"); $("before").classList.remove("hidden");
+    $("hr0").value=""; $("hr1").value="";
+    $("count").textContent="Сохранено в дневник";
+  };
+  function renderLog(){
+    const a=load(), tb=$("logBody"); tb.innerHTML="";
+    if(!a.length){ tb.innerHTML='<tr><td colspan="4" class="note">Пока пусто. Включите «записать пульс» перед сеансом.</td></tr>'; $("logSum").textContent=""; return; }
+    let dh=[], ds=[];
+    a.forEach(r=>{
+      const d=new Date(r.date), tr=document.createElement("tr");
+      const hr=(r.hr0&&r.hr1)?`${r.hr0} → ${r.hr1}`:"–", st=(r.s0!=null&&r.s1!=null)?`${r.s0} → ${r.s1}`:"–";
+      if(r.hr0&&r.hr1) dh.push(r.hr0-r.hr1); if(r.s0!=null&&r.s1!=null) ds.push(r.s0-r.s1);
+      tr.innerHTML=`<td>${d.toLocaleDateString("ru-RU",{day:"2-digit",month:"2-digit"})} ${d.toLocaleTimeString("ru-RU",{hour:"2-digit",minute:"2-digit"})}</td><td>${r.rate}/мин, ${r.minutes} мин</td><td>${hr}</td><td>${st}</td>`;
+      tb.appendChild(tr);
+    });
+    const avg=x=>(x.reduce((s,v)=>s+v,0)/x.length).toFixed(1).replace(".",",");
+    $("logSum").textContent=(dh.length?`В среднем пульс снижался на ${avg(dh)} уд/мин (${dh.length} зап.). `:"")+(ds.length?`Напряжение – на ${avg(ds)} балла.`:"");
+  }
+  $("clear").onclick=()=>{ if(confirm("Удалить все записи дневника?")){ store([]); renderLog(); } };
+  $("export").onclick=()=>{
+    const rows=["дата\tритм\tмин\tпульс до\tпульс после\tнапряжение до\tнапряжение после"].concat(load().map(r=>[r.date,r.rate,r.minutes,r.hr0??"",r.hr1??"",r.s0??"",r.s1??""].join("\t")));
+    const txt=rows.join("\n");
+    (navigator.clipboard?navigator.clipboard.writeText(txt):Promise.reject()).then(()=>alert("Скопировано – вставьте в Excel."),()=>prompt("Скопируйте:",txt));
+  };
+})();
+</script>
+</body>
+</html>
